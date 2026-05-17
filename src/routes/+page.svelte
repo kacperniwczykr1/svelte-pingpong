@@ -1,33 +1,19 @@
 <!-- src/routes/+page.svelte -->
 <script lang="ts">
   import { onMount } from 'svelte';
-
-  type Player = {
-    id: string;
-    name: string;
-    elo: number;
-    wins: number;
-    losses: number;
-  };
-
-  type Match = {
-    id: string;
-    playerAId: string;
-    playerBId: string;
-    winnerId: string;
-    date: string;
-    scoreA: number;
-    scoreB: number;
-    eloBeforeA: number;
-    eloBeforeB: number;
-    eloAfterA: number;
-    eloAfterB: number;
-  };
-
-  const STORAGE_KEY = 'ping-pong-elo-app';
-  const INITIAL_ELO = 1000;
-  const K_FACTOR = 32;
-  const POINTS_TO_WIN = 11;
+  import {
+    INITIAL_ELO,
+    STORAGE_KEY,
+    calculateNewRatings,
+    getCurrentServerId,
+    getWinnerId,
+    loadPingPongState,
+    savePingPongState,
+    type Match,
+    type MatchSide,
+    type Player
+  } from '$lib/ping-pong';
+  import './ping-pong-page.css';
 
   let players = $state<Player[]>([]);
   let matches = $state<Match[]>([]);
@@ -41,26 +27,17 @@
   let liveScoreB = $state(0);
   let firstServerId = $state('');
   let manualServerOffset = $state(0);
+  let hasLoadedStorage = $state(false);
 
   function uid() {
     return crypto.randomUUID();
   }
 
-  function expectedScore(playerRating: number, opponentRating: number) {
-    return 1 / (1 + Math.pow(10, (opponentRating - playerRating) / 400));
-  }
-
-  function calculateNewRatings(playerARating: number, playerBRating: number, winner: 'A' | 'B') {
-    const expectedA = expectedScore(playerARating, playerBRating);
-    const expectedB = expectedScore(playerBRating, playerARating);
-
-    const scoreA = winner === 'A' ? 1 : 0;
-    const scoreB = winner === 'B' ? 1 : 0;
-
-    return {
-      newA: Math.round(playerARating + K_FACTOR * (scoreA - expectedA)),
-      newB: Math.round(playerBRating + K_FACTOR * (scoreB - expectedB))
-    };
+  function resetLiveMatch() {
+    liveScoreA = 0;
+    liveScoreB = 0;
+    firstServerId = '';
+    manualServerOffset = 0;
   }
 
   function addPlayer() {
@@ -102,10 +79,7 @@
       return;
     }
 
-    liveScoreA = 0;
-    liveScoreB = 0;
-    firstServerId = '';
-    manualServerOffset = 0;
+    resetLiveMatch();
     isMatchOpen = true;
   }
 
@@ -113,10 +87,7 @@
     if (!confirm('Zamknąć aktualny mecz bez zapisywania wyniku?')) return;
 
     isMatchOpen = false;
-    liveScoreA = 0;
-    liveScoreB = 0;
-    firstServerId = '';
-    manualServerOffset = 0;
+    resetLiveMatch();
   }
 
   function chooseFirstServer(playerId: string) {
@@ -127,13 +98,10 @@
   function restartCurrentMatch() {
     if (!confirm('Zrestartować wynik aktualnego meczu?')) return;
 
-    liveScoreA = 0;
-    liveScoreB = 0;
-    firstServerId = '';
-    manualServerOffset = 0;
+    resetLiveMatch();
   }
 
-  function addPoint(player: 'A' | 'B') {
+  function addPoint(player: MatchSide) {
     if (!firstServerId) {
       alert('Najpierw wybierz, kto zaczyna serwować.');
       return;
@@ -148,7 +116,7 @@
     }
   }
 
-  function subtractPoint(player: 'A' | 'B') {
+  function subtractPoint(player: MatchSide) {
     if (matchWinnerId) return;
 
     if (player === 'A' && liveScoreA > 0) {
@@ -158,34 +126,6 @@
     if (player === 'B' && liveScoreB > 0) {
       liveScoreB -= 1;
     }
-  }
-
-  function getWinnerId(scoreA: number, scoreB: number) {
-    const maxScore = Math.max(scoreA, scoreB);
-    const difference = Math.abs(scoreA - scoreB);
-
-    if (maxScore >= POINTS_TO_WIN && difference >= 2) {
-      return scoreA > scoreB ? playerAId : playerBId;
-    }
-
-    return '';
-  }
-
-  function getCurrentServerId(scoreA: number, scoreB: number) {
-    if (!firstServerId || !playerAId || !playerBId) return '';
-
-    const totalPoints = scoreA + scoreB;
-    const isDeuceOrAfter = scoreA >= 10 && scoreB >= 10;
-    const switchEvery = isDeuceOrAfter ? 1 : 2;
-    const serveTurn = Math.floor(totalPoints / switchEvery) + manualServerOffset;
-    const firstServerIsA = firstServerId === playerAId;
-    const isFirstServerTurn = serveTurn % 2 === 0;
-
-    if (firstServerIsA) {
-      return isFirstServerTurn ? playerAId : playerBId;
-    }
-
-    return isFirstServerTurn ? playerBId : playerAId;
   }
 
   function toggleServer() {
@@ -248,10 +188,7 @@
     matches = [newMatch, ...matches];
 
     isMatchOpen = false;
-    liveScoreA = 0;
-    liveScoreB = 0;
-    firstServerId = '';
-    manualServerOffset = 0;
+    resetLiveMatch();
     playerAId = '';
     playerBId = '';
   }
@@ -263,8 +200,7 @@
     matches = [];
     playerAId = '';
     playerBId = '';
-    firstServerId = '';
-    manualServerOffset = 0;
+    resetLiveMatch();
     isMatchOpen = false;
   }
 
@@ -275,8 +211,17 @@
   const ranking = $derived([...players].sort((a, b) => b.elo - a.elo));
   const selectedPlayerA = $derived(players.find((player) => player.id === playerAId));
   const selectedPlayerB = $derived(players.find((player) => player.id === playerBId));
-  const matchWinnerId = $derived(getWinnerId(liveScoreA, liveScoreB));
-  const currentServerId = $derived(getCurrentServerId(liveScoreA, liveScoreB));
+  const matchWinnerId = $derived(getWinnerId(liveScoreA, liveScoreB, { playerAId, playerBId }));
+  const currentServerId = $derived(
+    getCurrentServerId({
+      firstServerId,
+      manualServerOffset,
+      playerAId,
+      playerBId,
+      scoreA: liveScoreA,
+      scoreB: liveScoreB
+    })
+  );
 
   const eloPreview = $derived.by(() => {
     const playerA = players.find((player) => player.id === playerAId);
@@ -296,21 +241,16 @@
   });
 
   onMount(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-
-    if (!saved) return;
-
-    try {
-      const parsed = JSON.parse(saved);
-      players = parsed.players ?? [];
-      matches = parsed.matches ?? [];
-    } catch (error) {
-      console.error('Błąd odczytu danych z localStorage:', error);
-    }
+    const savedState = loadPingPongState(localStorage, STORAGE_KEY);
+    players = savedState.players;
+    matches = savedState.matches;
+    hasLoadedStorage = true;
   });
 
   $effect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ players, matches }));
+    if (hasLoadedStorage) {
+      savePingPongState(localStorage, STORAGE_KEY, { players, matches });
+    }
   });
 </script>
 

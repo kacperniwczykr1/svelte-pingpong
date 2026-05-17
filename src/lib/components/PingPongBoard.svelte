@@ -112,9 +112,10 @@
       players,
       matches
     });
+    localStorage.removeItem(STORAGE_KEY);
     localStorage.setItem(getLegacyImportKey(activeSession.code), '1');
     hasLegacyLocalData = false;
-    alert('Lokalne dane zostały zaimportowane do tej sesji.');
+    alert('Lokalne dane zostały zaimportowane do tej sesji i wyczyszczone z trybu lokalnego.');
   }
 
   function addPlayer() {

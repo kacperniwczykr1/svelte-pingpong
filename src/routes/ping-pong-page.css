@@ -416,6 +416,7 @@ td {
 
 .match-finished-card {
 	width: min(560px, 100%);
+	max-height: calc(100dvh - 40px);
 	display: flex;
 	flex-direction: column;
 	gap: 18px;
@@ -423,6 +424,7 @@ td {
 	border-radius: 28px;
 	background: white;
 	color: #111827;
+	overflow-y: auto;
 	text-align: center;
 	box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
 }
@@ -522,6 +524,55 @@ td {
 
 	.tap-hint {
 		display: none;
+	}
+
+	.match-finished-overlay {
+		align-items: stretch;
+		padding: 10px;
+	}
+
+	.match-finished-card {
+		width: min(760px, 100%);
+		max-height: calc(100dvh - 20px);
+		gap: 10px;
+		padding: 14px;
+		border-radius: 18px;
+	}
+
+	.finished-label {
+		font-size: 0.75rem;
+	}
+
+	.match-finished-card h2 {
+		font-size: clamp(1.35rem, 5vw, 2rem);
+	}
+
+	.final-score {
+		font-size: 0.95rem;
+	}
+
+	.elo-summary {
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
+	}
+
+	.elo-player-result {
+		padding: 10px;
+		border-radius: 14px;
+	}
+
+	.elo-player-result strong {
+		font-size: 1.35rem;
+	}
+
+	.elo-player-result small {
+		font-size: 0.8rem;
+	}
+
+	.save-match-button {
+		min-height: 52px;
+		border-radius: 16px;
+		font-size: 1.1rem;
 	}
 }
 

@@ -22,7 +22,18 @@ export type Match = {
 
 export type MatchSide = 'A' | 'B';
 
+export type Session = {
+	id: string;
+	code: string;
+	name: string;
+	createdAt: string;
+};
+
 export type StoredPingPongState = {
 	players: Player[];
 	matches: Match[];
+};
+
+export type SessionState = StoredPingPongState & {
+	session: Session;
 };

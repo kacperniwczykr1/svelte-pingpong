@@ -17,6 +17,10 @@ button {
 }
 
 header {
+	display: flex;
+	gap: 16px;
+	align-items: flex-start;
+	justify-content: space-between;
 	margin-bottom: 24px;
 }
 
@@ -118,6 +122,62 @@ button:disabled {
 
 .muted {
 	color: #6b7280;
+}
+
+.error-text {
+	color: #b91c1c;
+	font-weight: 700;
+}
+
+.session-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	justify-content: flex-end;
+}
+
+.session-entry {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 18px;
+	align-items: center;
+}
+
+.session-entry-actions,
+.join-row {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+
+.join-row input {
+	width: 140px;
+	text-transform: uppercase;
+}
+
+.session-badge {
+	display: inline-flex;
+	align-items: center;
+	min-height: 40px;
+	padding: 0 12px;
+	border-radius: 10px;
+	background: #dbeafe;
+	color: #1d4ed8;
+	font-weight: 800;
+}
+
+.import-card {
+	display: flex;
+	gap: 16px;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.save-status {
+	margin: -8px 0 14px;
+	color: #4b5563;
+	font-size: 0.9rem;
+	font-weight: 700;
 }
 
 .table-wrapper {
@@ -471,9 +531,26 @@ td {
 	}
 
 	.row,
-	.section-header {
+	.section-header,
+	header,
+	.import-card {
 		flex-direction: column;
 		align-items: stretch;
+	}
+
+	.session-actions {
+		justify-content: flex-start;
+	}
+
+	.session-entry,
+	.session-entry-actions,
+	.join-row {
+		display: grid;
+		grid-template-columns: 1fr;
+	}
+
+	.join-row input {
+		width: auto;
 	}
 
 	.live-scoreboard {

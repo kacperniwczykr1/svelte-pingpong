@@ -6,7 +6,7 @@ export {
 	STORAGE_KEY
 } from './constants';
 export { createPingPongDataSource, type PingPongDataSource } from './data-source';
-export { calculateNewRatings, expectedScore } from './elo';
+export { calculateNewRatings, expectedScore, getScoreImpact } from './elo';
 export { getCurrentServerId, getWinnerId } from './match-rules';
 export { createSessionCode, normalizeSessionCode } from './session-code';
 export { loadPingPongState, savePingPongState } from './storage';

@@ -225,7 +225,10 @@
     if (!playerA || !playerB) return;
 
     const winner = winnerId === playerAId ? 'A' : 'B';
-    const { newA, newB } = calculateNewRatings(playerA.elo, playerB.elo, winner);
+    const { newA, newB } = calculateNewRatings(playerA.elo, playerB.elo, winner, {
+      scoreA: liveScoreA,
+      scoreB: liveScoreB
+    });
 
     const newMatch: Match = {
       id: uid(),
@@ -308,13 +311,17 @@
     if (!playerA || !playerB || !matchWinnerId) return null;
 
     const winner = matchWinnerId === playerAId ? 'A' : 'B';
-    const { newA, newB } = calculateNewRatings(playerA.elo, playerB.elo, winner);
+    const { newA, newB, scoreImpact } = calculateNewRatings(playerA.elo, playerB.elo, winner, {
+      scoreA: liveScoreA,
+      scoreB: liveScoreB
+    });
 
     return {
       deltaA: newA - playerA.elo,
       deltaB: newB - playerB.elo,
       newA,
-      newB
+      newB,
+      scoreImpact
     };
   });
 
